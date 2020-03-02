@@ -13,10 +13,20 @@ def get_book_info(book_id):
                             'div', class_="bookimage").find('img').get('src')
     book_image_name = book_image_path.rsplit('/')[-1]
     book_info = book_content.find('h1').text
+    book_genre = [
+                 genre.text for genre in book_content.find('span',
+                 class_="d_book").find_all('a')
+                 ]
+    print(book_genre)
+    book_comments =[
+                    comment.find('span',class_="black").text 
+                    for comment in book_content.find_all('div',class_="texts")
+                    ]
+    
     book_name, author = book_info.replace('\xa0', "").split('::')
     book_title=f"{book_name.strip()} ({author.strip()}).txt"
     return book_title, urljoin(host_url,book_image_path),book_image_name
 
 
 if __name__ == "__main__":
-    print(get_book_info(9))
+    print(get_book_info(7))
