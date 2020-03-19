@@ -5,7 +5,9 @@ from book_parser import get_book_info
 from pathvalidate import sanitize_filename
 from urllib.parse import urlparse
 from parse_book_urls import get_books_urls
+from progressbar import render_progressbar
 import json
+
 
 
 def get_norm_file_path(folder, filename):
@@ -40,7 +42,12 @@ def save_json(books_info):
 
 def main():
     books_info_summary = []
-    for url in get_books_urls(start_page=1, end_page=1):
+    start_page=1
+    end_page=1
+    books_urls = get_books_urls(start_page,end_page)
+    count=len(books_urls)
+    print()
+    for url in books_urls:        
         response = requests.get(url, allow_redirects=False)
         if response.status_code == 200:
             title, author, img_url,img_name,genres,comments = get_book_info(url)
@@ -55,7 +62,10 @@ def main():
                 "comments": comments,
                 "genres": genres,
             })
-            print(f'скачана книга : {title}({author})')
+            count-=1
+            print('\u001b[1A',render_progressbar(count+1,1),
+                        f'книга : {title}({author})                       ' )
+            
     save_json(books_info_summary)
 
 if __name__ == "__main__":
