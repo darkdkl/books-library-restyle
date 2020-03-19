@@ -1,12 +1,13 @@
 import requests
 import os
 import time
+import argparse
+import json
 from book_parser import get_book_info
 from pathvalidate import sanitize_filename
 from urllib.parse import urlparse
 from parse_book_urls import get_books_urls
 from progressbar import render_progressbar
-import json
 
 
 
@@ -14,45 +15,46 @@ def get_norm_file_path(folder, filename):
     return os.path.join(folder, sanitize_filename(filename))
 
 
-def download_txt(url, book_title, book_author, folder='books/'):
+def download_txt(url, book_title, book_author, file_path):
     filename = f"{book_title} ({book_author}).txt"
-    os.makedirs(folder, exist_ok=True)
+    os.makedirs(file_path, exist_ok=True)
     response = requests.get(url)
-    if response.ok:
-        file_path = get_norm_file_path(folder, filename)
-        with open(file_path, 'w') as file_data:
+    if response.ok:        
+        with open(get_norm_file_path(file_path, filename), 'w') as file_data:
             file_data.write(response.text)
         return file_path
 
 
-def download_image(url, filename, folder='img/'):
-    os.makedirs(folder, exist_ok=True)
+def download_image(url, filename, file_path):
+    os.makedirs(file_path, exist_ok=True)
     response = requests.get(url)
-    if response.ok:
-        file_path = get_norm_file_path(folder, filename)
-        with open(file_path, 'wb') as img_file:
+    if response.ok:        
+        with open(get_norm_file_path(file_path, filename), 'wb') as img_file:
             img_file.write(response.content)
         return file_path
 
 
-def save_json(books_info):
-    with open("books_info.json", "w", encoding='utf-8') as file:
+def save_json(books_info,json_path):
+    os.makedirs(json_path, exist_ok=True)
+    with open(get_norm_file_path(json_path,"/books_info.json"),
+                                                 "w", encoding='utf-8') as file:
         json.dump(books_info, file, ensure_ascii=False)
 
 
-def main():
-    books_info_summary = []
-    start_page=1
-    end_page=1
+def main(start_page,end_page,folder,json_path):
+    os.makedirs(folder, exist_ok=True)
+    books_info_summary = []  
     books_urls = get_books_urls(start_page,end_page)
     count=len(books_urls)
     print()
     for url in books_urls:        
         response = requests.get(url, allow_redirects=False)
         if response.status_code == 200:
-            title, author, img_url,img_name,genres,comments = get_book_info(url)
-            img_src = download_image(img_url, img_name)
-            book_path = download_txt(url, title, author)
+            title, author,text_url,img_url,img_name,genres,comments = get_book_info(url)
+            book_folder_name=f"/{title}({author})/"
+            file_path=folder+book_folder_name
+            img_src = download_image(img_url, img_name,file_path)
+            book_path = download_txt(text_url, title, author,file_path)
             time.sleep(1)
             books_info_summary.append({
                 "title": title,
@@ -64,9 +66,21 @@ def main():
             })
             count-=1
             print('\u001b[1A',render_progressbar(count+1,1),
-                        f'книга : {title}({author})                       ' )
+                        f'книга : {title}({author})                          ' )
             
-    save_json(books_info_summary)
+    save_json(books_info_summary,json_path)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--start_page',default=1,help='Начальная страница каталога книг',type=int)
+    parser.add_argument('--end_page', help='Последняя страница каталога книг',type=int)
+    parser.add_argument('--dest_folder', default ='books',help='Каталог для данных')
+    parser.add_argument('--json_path', default ='books',help='Каталог для JSON данных')    
+
+    args = parser.parse_args()
+    try:
+        main(args.start_page,args.end_page,args.dest_folder,args.json_path)
+    except KeyboardInterrupt:
+        print("программа прервана")
+    
+    
