@@ -7,72 +7,32 @@ from book_parser import get_book_info
 from pathvalidate import sanitize_filename
 from urllib.parse import urlparse
 from parse_book_urls import get_books_urls
-from progressbar import render_progressbar
+from tqdm import tqdm
 
-
-def get_norm_file_path(folder, filename):
-    return os.path.join(folder, sanitize_filename(filename))
-
-def download_txt(url, book_title, book_author, file_path):
+def download_txt(url, book_title, book_author, folder_path):
     filename = f"{book_title} ({book_author}).txt"
-    os.makedirs(file_path, exist_ok=True)
+    os.makedirs(folder_path, exist_ok=True)
     response = requests.get(url)
     if response.ok:        
-        with open(get_norm_file_path(file_path, filename), 'w') as file_data:
+        with open(os.path.join(folder_path, sanitize_filename(filename)), 'w') as file_data:
             file_data.write(response.text)
-        return file_path
+        return folder_path
 
-def download_image(url, filename, file_path):
-    os.makedirs(file_path, exist_ok=True)
+def download_image(url, filename, folder_path):
+    os.makedirs(folder_path, exist_ok=True)
     response = requests.get(url)
     if response.ok:        
-        with open(get_norm_file_path(file_path, filename), 'wb') as img_file:
+        with open(os.path.join(folder_path, sanitize_filename(filename)), 'wb') as img_file:
             img_file.write(response.content)
-        return file_path
+        return folder_path
 
 def save_json(books_info,json_path):
     os.makedirs(json_path, exist_ok=True)
-    with open(get_norm_file_path(json_path,"/books_info.json"),
+    with open(os.path.join(json_path,"books_info.json"),
                                                  "w", encoding='utf-8') as file:
         json.dump(books_info, file, ensure_ascii=False)
 
-def main(start_page,end_page,folder,json_path,skip_imgs,skip_txt,show_url):
-    os.makedirs(folder, exist_ok=True)
-    books_info_summary = []  
-    books_urls = get_books_urls(start_page,end_page)
-    count=len(books_urls)
-    if not show_url:print()
-    for url in books_urls:        
-        response = requests.get(url, allow_redirects=False)
-        if response.status_code == 200:
-            title, author,text_url,img_url,img_name,genres,comments = get_book_info(url)
-            book_folder_name=f"/{title}({author})/"
-            file_path=folder+book_folder_name
-            img_src = book_path = None
-            if not skip_imgs:
-                img_src = download_image(img_url, img_name,file_path)
-            if not skip_txt:
-                book_path = download_txt(text_url, title, author,file_path)
-            # time.sleep(0.5)
-            books_info_summary.append({
-                "title": title,
-                "author": author,
-                "img_src": img_src,
-                "book_path": book_path,
-                "comments": comments,
-                "genres": genres,
-            })
-            count-=1            
-            if show_url:
-                print(url)
-            else:
-                
-                print('\u001b[1A',render_progressbar(count+1,1),
-                        f'книга : {title}({author})                          ')
-
-    save_json(books_info_summary,json_path)
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--start_page',default=1,
                             help='Начальная страница каталога книг',type=int)
@@ -89,10 +49,40 @@ if __name__ == "__main__":
     parser.add_argument('--show_url', action='store_true',
                             help='Отображать только url книги')
     args = parser.parse_args()  
-    try:        
-        main(args.start_page,args.end_page,args.dest_folder,args.json_path,
-                                    args.skip_imgs,args.skip_txt,args.show_url)
+    try:      
+        os.makedirs(args.dest_folder, exist_ok=True)
+        books_info_summary = []  
+        books_urls = get_books_urls(args.start_page,args.end_page)        
+        pbar_and_urls= tqdm(books_urls)
+        for url in pbar_and_urls:                 
+            response = requests.get(url, allow_redirects=False)
+            if response.status_code == 200:
+                title, author,text_url,img_url,img_name,genres,comments = get_book_info(url)
+                book_folder_name=f"{title}({author})"
+                folder_path=os.path.join(args.dest_folder,book_folder_name)                
+                img_src = book_path = None
+                if not args.skip_imgs:
+                    img_src = download_image(img_url, img_name,folder_path)
+                if not args.skip_txt:
+                    book_path = download_txt(text_url, title, author,folder_path)
+                time.sleep(0.5)
+                books_info_summary.append({
+                    "title": title,
+                    "author": author,
+                    "img_src": img_src,
+                    "book_path": book_path,
+                    "comments": comments,
+                    "genres": genres,
+                })                          
+                if args.show_url:
+                    pbar_and_urls.set_description(f'  {url} ')
+            
+        save_json(books_info_summary,args.json_path)
+
     except KeyboardInterrupt:
         print("программа прервана")
+
+if __name__ == "__main__":
+    main()   
     
     

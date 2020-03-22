@@ -33,7 +33,7 @@ pip3 install -r requirements.txt
 ### Запуск:
 
 ```
-#python3 parse_tululu.py --end_page 1
+$ python3 parse_tululu.py --end_page 1
 ```
 
 ### Цель проекта
