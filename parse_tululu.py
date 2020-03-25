@@ -13,23 +13,25 @@ def download_txt(url, book_title, book_author, folder_path):
     filename = f"{book_title} ({book_author}).txt"
     os.makedirs(folder_path, exist_ok=True)
     response = requests.get(url)
+    book_text_file = os.path.join(folder_path, sanitize_filename(filename))
     if response.ok:        
-        with open(os.path.join(folder_path, sanitize_filename(filename)), 'w') as file_data:
+        with open(book_text_file, 'w') as file_data:
             file_data.write(response.text)
         return folder_path
 
 def download_image(url, filename, folder_path):
     os.makedirs(folder_path, exist_ok=True)
     response = requests.get(url)
+    book_image_file = os.path.join(folder_path, sanitize_filename(filename))
     if response.ok:        
-        with open(os.path.join(folder_path, sanitize_filename(filename)), 'wb') as img_file:
+        with open(book_image_file, 'wb') as img_file:
             img_file.write(response.content)
         return folder_path
 
 def save_json(books_info,json_path):
     os.makedirs(json_path, exist_ok=True)
-    with open(os.path.join(json_path,"books_info.json"),
-                                                 "w", encoding='utf-8') as file:
+    json_file = os.path.join(json_path,"books_info.json")
+    with open(json_file,"w", encoding='utf-8') as file:
         json.dump(books_info, file, ensure_ascii=False)
 
 def main():
