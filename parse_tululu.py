@@ -5,7 +5,7 @@ import argparse
 import json
 from book_parser import get_book_info
 from pathvalidate import sanitize_filename
-from urllib.parse import urlparse
+from urllib.parse import urlparse,urljoin
 from parse_book_urls import get_books_urls
 from tqdm import tqdm
 
@@ -59,7 +59,9 @@ def main():
         for url in pbar_and_urls:                 
             response = requests.get(url, allow_redirects=False)
             if response.status_code == 200:
-                title, author,text_url,img_url,img_name,genres,comments = get_book_info(url)
+                title, author,text_path,img_path,img_name,genres,comments = get_book_info(url)
+                text_url = urljoin(url,text_path)
+                img_url = urljoin(url,img_path)
                 book_folder_name=f"{title}({author})"
                 folder_path=os.path.join(args.dest_folder,book_folder_name)                
                 img_src = book_path = None
