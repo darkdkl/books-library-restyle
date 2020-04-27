@@ -13,7 +13,6 @@ def get_books_urls(start_page=1, end_page=3,genre_id="l55"):
     for page in iterator:
         response_for_test = requests.get(urljoin(url, str(page)),
                                          allow_redirects=False)
-        time.sleep(1)
         if response_for_test.status_code == 200:
             response = requests.get(urljoin(url, str(page)))
             soup = BeautifulSoup(response.text, 'lxml')                        

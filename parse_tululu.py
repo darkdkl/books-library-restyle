@@ -10,14 +10,14 @@ from parse_book_urls import get_books_urls
 from tqdm import tqdm
 
 def download_txt(url, book_title, book_author, folder_path):
-    filename = f"{book_title} ({book_author}).txt"
+    filename = f"{book_title}_({book_author}).txt"
     os.makedirs(folder_path, exist_ok=True)
     response = requests.get(url)
     book_text_file = os.path.join(folder_path, sanitize_filename(filename))
     if response.ok:        
         with open(book_text_file, 'w') as file_data:
             file_data.write(response.text)
-        return folder_path
+    return book_text_file
 
 def download_image(url, filename, folder_path):
     os.makedirs(folder_path, exist_ok=True)
@@ -26,7 +26,7 @@ def download_image(url, filename, folder_path):
     if response.ok:        
         with open(book_image_file, 'wb') as img_file:
             img_file.write(response.content)
-        return folder_path
+    return book_image_file
 
 def save_json(books_info,json_path):
     os.makedirs(json_path, exist_ok=True)
@@ -69,7 +69,7 @@ def main():
                     img_src = download_image(img_url, img_name,folder_path)
                 if not args.skip_txt:
                     book_path = download_txt(text_url, title, author,folder_path)
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 books_info_summary.append({
                     "title": title,
                     "author": author,
